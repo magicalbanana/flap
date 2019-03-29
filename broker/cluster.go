@@ -170,7 +170,8 @@ func (p *peer) stop() {
 
 // Return a copy of our complete state.
 func (p *peer) Gossip() (complete mesh.GossipData) {
-	return
+	fmt.Println("send gossip")
+	return complete
 }
 
 // Merge the gossiped data represented by buf into our state.
