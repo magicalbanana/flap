@@ -31,6 +31,8 @@ type Broker struct {
 
 	clients map[uint64]*client
 
+	cluster *cluster
+
 	sync.RWMutex
 }
 
@@ -66,8 +68,10 @@ func New(path string) *Broker {
 func (b *Broker) Start() {
 	b.running = true
 
-	// join cluster
-	b.joinCluster()
+	b.cluster = &cluster{
+		bk: b,
+	}
+	go b.cluster.Init()
 
 	go b.listen()
 

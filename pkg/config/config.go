@@ -22,8 +22,8 @@ type Config struct {
 	}
 
 	Cluster struct {
-		Listen string
-		Seeds  []string
+		Port      int
+		SeedPeers []string
 	}
 }
 
