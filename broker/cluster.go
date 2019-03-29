@@ -171,6 +171,9 @@ func (p *peer) stop() {
 // Return a copy of our complete state.
 func (p *peer) Gossip() (complete mesh.GossipData) {
 	fmt.Println("send gossip")
+	complete = &state{
+		i: 3,
+	}
 	return complete
 }
 
