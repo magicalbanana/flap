@@ -79,15 +79,9 @@ func New() *Cluster {
 	}
 
 	c.gossip = gossip
-	func() {
-		g.L.Debug("cluster starting", zap.String("hwaddr", hwaddr), zap.Int("port", config.Conf.Cluster.Port))
-		router.Start()
-	}()
 
-	defer func() {
-		g.L.Debug("cluster stopping")
-		router.Stop()
-	}()
+	g.L.Debug("cluster starting", zap.String("hwaddr", hwaddr), zap.Int("port", config.Conf.Cluster.Port))
+	router.Start()
 
 	return c
 }
