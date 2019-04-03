@@ -12,15 +12,15 @@ import (
 )
 
 /*
-Here defines the messages transfer in cluster
+Here defines the events happened in cluster
 */
 
 // When a node comes online, it will broadcast the online message to all peers
-type OnlineMessage struct {
+type OnlineEvent struct {
 	I int
 }
 
-func (m OnlineMessage) Encode() [][]byte {
+func (m OnlineEvent) Encode() [][]byte {
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(m); err != nil {
 		g.L.Info("encode onlineMessage error", zap.Error(err))
@@ -29,6 +29,6 @@ func (m OnlineMessage) Encode() [][]byte {
 	return [][]byte{buf.Bytes()}
 }
 
-func (m OnlineMessage) Merge(new mesh.GossipData) (complete mesh.GossipData) {
+func (m OnlineEvent) Merge(new mesh.GossipData) (complete mesh.GossipData) {
 	return
 }

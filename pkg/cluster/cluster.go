@@ -8,20 +8,22 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/imdevlab/flap/pkg/config"
 	"github.com/imdevlab/flap/pkg/message"
 	"github.com/imdevlab/g"
 	"github.com/imdevlab/g/utils"
+	"github.com/kelindar/binary"
 	"github.com/weaveworks/mesh"
 	"go.uber.org/zap"
 )
 
 type Cluster struct {
-	sync.Mutex
+	sync.RWMutex
 	name   mesh.PeerName
 	gossip mesh.Gossip
+
+	subs Subs
 
 	OnSubscribe   func(topic []byte, cid uint64) bool
 	OnUnSubscribe func(topic []byte, cid uint64) bool
@@ -50,6 +52,7 @@ func New() *Cluster {
 	}
 
 	c := &Cluster{
+		subs: make(Subs),
 		name: name,
 	}
 
@@ -86,32 +89,39 @@ func New() *Cluster {
 
 	router.ConnectionMaker.InitiateConnections(peers.slice(), true)
 
-	// When a node comes online, it will broadcast the online message to all peers
-	go func() {
-		time.Sleep(10 * time.Second)
-		c.gossip.GossipBroadcast(OnlineMessage{I: 3})
-	}()
-
 	return c
 }
 
 // Cluster methods
 // when peer offline, we need to unsubscribe the channels in that peer
 func (c *Cluster) onPeerOffline(peer mesh.PeerName) {
-	fmt.Println("peer offline:", peer)
+	c.Lock()
+	c.subs.removePeer(peer)
+	c.Unlock()
+
+	fmt.Printf("peer offline: %#v\n", c.subs)
 }
 
 //implements the mesh.Gossiper
 // Return a copy of our complete state.
 func (c *Cluster) Gossip() (complete mesh.GossipData) {
-	fmt.Println("send gossip")
-	return complete
+	return c.subs
 }
 
 // Merge the gossiped data represented by buf into our state.
 // Return the state information that was modified.
 func (c *Cluster) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
-	fmt.Println("on gossip:", buf)
+	var other Subs
+	err = binary.Unmarshal(buf, &other)
+	if err != nil {
+		return
+	}
+
+	c.Lock()
+	c.subs.Merge(other)
+	c.Unlock()
+
+	fmt.Printf("after gossip: %#v\n", c.subs)
 	return
 }
 
