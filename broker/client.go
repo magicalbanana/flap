@@ -3,6 +3,7 @@ package broker
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"net"
 	"sync/atomic"
 	"time"
@@ -58,6 +59,7 @@ func (c *client) process() {
 		c.bk.Unlock()
 
 		c.closed = true
+		c.closech <- struct{}{}
 		c.conn.Close()
 		g.L.Debug("client closed", zap.Uint64("conn_id", c.id))
 	}()
@@ -142,6 +144,7 @@ func (c *client) onSubscribe(topic []byte) error {
 func (c *client) sendLoop() {
 	defer func() {
 		// when disconnect, automaticly unsubscribe the topic
+		fmt.Println("here1111:", c.subs)
 		for tid := range c.subs {
 			c.bk.cluster.Unsubscribe(tid, c.id)
 		}
