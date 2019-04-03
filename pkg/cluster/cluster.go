@@ -52,11 +52,6 @@ func New() *Cluster {
 		name: name,
 	}
 
-	peers := stringset{}
-	for _, peer := range config.Conf.Cluster.SeedPeers {
-		peers[peer] = struct{}{}
-	}
-
 	router, err := mesh.NewRouter(mesh.Config{
 		Host:               "0.0.0.0",
 		Port:               config.Conf.Cluster.Port,
@@ -72,7 +67,6 @@ func New() *Cluster {
 	router.Peers.OnGC(func(peer *mesh.Peer) {
 		c.onPeerOffline(peer.Name)
 	})
-
 	gossip, err := router.NewGossip("default", c)
 	if err != nil {
 		g.L.Fatal("Could not create cluster gossip", zap.Error(err))
@@ -83,12 +77,21 @@ func New() *Cluster {
 	g.L.Debug("cluster starting", zap.String("hwaddr", hwaddr), zap.Int("port", config.Conf.Cluster.Port))
 	router.Start()
 
+	// init connections to seeds
+	peers := stringset{}
+	for _, peer := range config.Conf.Cluster.SeedPeers {
+		peers[peer] = struct{}{}
+	}
+
 	router.ConnectionMaker.InitiateConnections(peers.slice(), true)
 
+	// When a node comes online, it will broadcast the online message to all peers
+	c.gossip.GossipBroadcast(OnlineMessage{})
 	return c
 }
 
 // Cluster methods
+// when peer offline, we need to unsubscribe the channels in that peer
 func (c *Cluster) onPeerOffline(peer mesh.PeerName) {
 	fmt.Println("peer offline:", peer)
 }
@@ -110,6 +113,7 @@ func (c *Cluster) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
 // Merge the gossiped data represented by buf into our state.
 // Return the state information that was modified.
 func (c *Cluster) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mesh.GossipData, err error) {
+	fmt.Println("recv broadcast:", src, buf)
 	return
 }
 
