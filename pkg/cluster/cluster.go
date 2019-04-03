@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/imdevlab/flap/pkg/config"
 	"github.com/imdevlab/flap/pkg/message"
@@ -86,7 +87,11 @@ func New() *Cluster {
 	router.ConnectionMaker.InitiateConnections(peers.slice(), true)
 
 	// When a node comes online, it will broadcast the online message to all peers
-	c.gossip.GossipBroadcast(OnlineMessage{})
+	go func() {
+		time.Sleep(2 * time.Second)
+		c.gossip.GossipBroadcast(OnlineMessage{})
+	}()
+
 	return c
 }
 
