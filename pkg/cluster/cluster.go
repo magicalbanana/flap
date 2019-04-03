@@ -83,6 +83,8 @@ func New() *Cluster {
 	g.L.Debug("cluster starting", zap.String("hwaddr", hwaddr), zap.Int("port", config.Conf.Cluster.Port))
 	router.Start()
 
+	router.ConnectionMaker.InitiateConnections(peers.slice(), true)
+
 	return c
 }
 
