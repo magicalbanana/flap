@@ -9,6 +9,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/imdevlab/flap/pkg/cluster"
 	"github.com/imdevlab/flap/pkg/config"
 	"github.com/imdevlab/flap/pkg/network/listener"
 	"github.com/imdevlab/flap/pkg/network/websocket"
@@ -31,7 +32,7 @@ type Broker struct {
 
 	clients map[uint64]*client
 
-	cluster *cluster
+	cluster *cluster.Cluster
 
 	sync.RWMutex
 }
@@ -68,10 +69,7 @@ func New(path string) *Broker {
 func (b *Broker) Start() {
 	b.running = true
 
-	b.cluster = &cluster{
-		bk: b,
-	}
-	go b.cluster.Init()
+	b.cluster = cluster.New()
 
 	go b.listen()
 

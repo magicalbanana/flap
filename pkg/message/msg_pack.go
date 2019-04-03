@@ -21,7 +21,7 @@ import (
 	"github.com/golang/snappy"
 )
 
-func PackMsg(m *PubMsg) []byte {
+func PackPub(m *Pub) []byte {
 	rml := len(m.RawID)
 	ml := len(m.ID)
 	tl := len(m.Topic)
@@ -67,7 +67,7 @@ func PackMsg(m *PubMsg) []byte {
 	return msg
 }
 
-func UnpackMsg(b []byte) (*PubMsg, error) {
+func UnpackPub(b []byte) (*Pub, error) {
 	// msgid
 	ml := uint32(binary.LittleEndian.Uint16(b[:2]))
 	msgid := b[2 : 2+ml]
@@ -101,7 +101,7 @@ func UnpackMsg(b []byte) (*PubMsg, error) {
 
 	// raw msg id
 	rid := b[23+ml+pl+tl+fl+tsl:]
-	return &PubMsg{rid, msgid, topic, payload, acked, int8(tp), int8(qos), int64(ttl), from, ts}, nil
+	return &Pub{rid, msgid, topic, payload, acked, int8(tp), int8(qos), int64(ttl), from, ts}, nil
 }
 
 func PackSub(topic []byte) []byte {
@@ -300,50 +300,7 @@ func UnPackPullMsg(b []byte) (int, []byte) {
 	return int(count), b[2:]
 }
 
-func PackTimerMsg(m *TimerMsg, cmd byte) []byte {
-	ml := uint32(len(m.ID))
-	tl := uint32(len(m.Topic))
-	pl := uint32(len(m.Payload))
-	msg := make([]byte, 4+1+2+ml+2+tl+4+pl+8+4)
-
-	//header
-	binary.LittleEndian.PutUint32(msg[:4], 1+2+ml+2+tl+4+pl+8+4)
-	//command
-	msg[4] = cmd
-	//msgid
-	binary.LittleEndian.PutUint16(msg[5:7], uint16(ml))
-	copy(msg[7:7+ml], m.ID)
-	//topic
-	binary.LittleEndian.PutUint16(msg[7+ml:9+ml], uint16(tl))
-	copy(msg[9+ml:9+ml+tl], m.Topic)
-	//payload
-	binary.LittleEndian.PutUint32(msg[9+ml+tl:13+ml+tl], pl)
-	copy(msg[13+ml+tl:13+ml+tl+pl], m.Payload)
-	//trigger time
-	binary.LittleEndian.PutUint64(msg[13+ml+tl+pl:21+ml+tl+pl], uint64(m.Trigger))
-	//delay
-	binary.LittleEndian.PutUint32(msg[21+ml+tl+pl:25+ml+tl+pl], uint32(m.Delay))
-	return msg
-}
-
-func UnpackTimerMsg(b []byte) *TimerMsg {
-	//msgid 2
-	ml := uint32(binary.LittleEndian.Uint16(b[:2]))
-	msgid := b[2 : 2+ml]
-	//topic 2
-	tl := uint32(binary.LittleEndian.Uint16(b[2+ml : 4+ml]))
-	topic := b[4+ml : 4+ml+tl]
-	//payload 4
-	pl := binary.LittleEndian.Uint32(b[4+ml+tl : 8+ml+tl])
-	payload := b[8+ml+tl : 8+ml+tl+pl]
-	//trigger time 8
-	st := binary.LittleEndian.Uint64(b[8+ml+tl+pl : 16+ml+tl+pl])
-	//delay 4
-	delay := binary.LittleEndian.Uint32(b[16+ml+tl+pl : 20+ml+tl+pl])
-	return &TimerMsg{msgid, topic, payload, int64(st), int(delay)}
-}
-
-func PackPubBatch(ms []*PubMsg, cmd byte) []byte {
+func PackPubBatch(ms []*Pub, cmd byte) []byte {
 	bl := 25 * len(ms)
 	for _, m := range ms {
 		bl += (len(m.ID) + len(m.Topic) + len(m.Payload)) + len(m.Sender) + len(m.RawID) + len(m.Timestamp)
@@ -398,9 +355,9 @@ func PackPubBatch(ms []*PubMsg, cmd byte) []byte {
 	return msg
 }
 
-func UnpackPubBatch(m []byte) ([]*PubMsg, error) {
+func UnpackPubBatch(m []byte) ([]*Pub, error) {
 	msl := binary.LittleEndian.Uint32(m[:4])
-	msgs := make([]*PubMsg, msl)
+	msgs := make([]*Pub, msl)
 	// decompress
 	b, err := snappy.Decode(nil, m[4:])
 	if err != nil {
@@ -445,7 +402,7 @@ func UnpackPubBatch(m []byte) ([]*PubMsg, error) {
 		// timestamp
 		tsl := uint32(binary.LittleEndian.Uint16(b[last+23+ml+tl+pl+fl+rml : last+25+ml+tl+pl+fl+rml]))
 		ts := b[last+25+ml+tl+pl+fl+rml : last+25+ml+tl+pl+fl+rml+tsl]
-		msgs[index] = &PubMsg{rid, msgid, topic, payload, acked, int8(tp), int8(qos), int64(ttl), from, ts}
+		msgs[index] = &Pub{rid, msgid, topic, payload, acked, int8(tp), int8(qos), int64(ttl), from, ts}
 
 		index++
 		last = last + 25 + ml + tl + pl + fl + rml + tsl

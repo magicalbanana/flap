@@ -24,7 +24,7 @@ type client struct {
 	conn net.Conn
 	bk   *Broker
 
-	sender chan []*message.PubMsg
+	sender chan []*message.Pub
 
 	subs map[string]struct{}
 
@@ -40,7 +40,7 @@ func newClient(conn net.Conn, b *Broker) *client {
 		id:      id,
 		conn:    conn,
 		bk:      b,
-		sender:  make(chan []*message.PubMsg, MAX_CHANNEL_LEN),
+		sender:  make(chan []*message.Pub, MAX_CHANNEL_LEN),
 		subs:    make(map[string]struct{}),
 		closech: make(chan struct{}),
 	}

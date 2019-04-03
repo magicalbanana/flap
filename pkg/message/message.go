@@ -1,6 +1,6 @@
 package message
 
-type PubMsg struct {
+type Pub struct {
 	RawID     []byte
 	ID        []byte
 	Topic     []byte
@@ -11,14 +11,6 @@ type PubMsg struct {
 	TTL       int64
 	Sender    []byte
 	Timestamp []byte
-}
-
-type TimerMsg struct {
-	ID      []byte
-	Topic   []byte
-	Payload []byte
-	Trigger int64
-	Delay   int
 }
 
 type Ack struct {
