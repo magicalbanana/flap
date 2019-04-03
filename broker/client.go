@@ -143,7 +143,7 @@ func (c *client) sendLoop() {
 	defer func() {
 		// when disconnect, automaticly unsubscribe the topic
 		for tid := range c.subs {
-			c.bk.cluster.UnSubscribe(tid, c.id)
+			c.bk.cluster.Unsubscribe(tid, c.id)
 		}
 		c.closed = true
 		c.conn.Close()
