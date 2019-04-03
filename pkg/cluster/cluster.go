@@ -21,7 +21,7 @@ import (
 
 type Cluster struct {
 	sync.RWMutex
-	name   mesh.PeerName
+	Name   mesh.PeerName
 	gossip mesh.Gossip
 
 	subs Subs
@@ -54,7 +54,7 @@ func New() *Cluster {
 
 	c := &Cluster{
 		subs: make(Subs),
-		name: name,
+		Name: name,
 	}
 
 	router, err := mesh.NewRouter(mesh.Config{
@@ -138,6 +138,23 @@ func (c *Cluster) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mes
 func (c *Cluster) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 	fmt.Println("recv unicast:", src, buf)
 	return nil
+}
+
+// A client Subscribe to our cluster
+func (c *Cluster) Subscribe(tid uint32, cid uint64) {
+	c.Lock()
+	defer c.Unlock()
+
+	subs, ok := c.subs[tid]
+	if !ok {
+		nsubs := make(map[uint64]*Sub)
+		nsubs[cid] = &Sub{c.Name}
+		c.subs[tid] = nsubs
+	} else {
+		subs[cid] = &Sub{c.Name}
+	}
+
+	//todo, broadcast to all peers
 }
 
 type stringset map[string]struct{}

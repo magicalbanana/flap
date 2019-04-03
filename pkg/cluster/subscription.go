@@ -15,7 +15,7 @@ type Sub struct {
 // Subs is the set of Sub
 // first uint64: topic id
 // second uint 64: client id
-type Subs map[uint64]map[uint64]*Sub
+type Subs map[uint32]map[uint64]*Sub
 
 func (ss Subs) Encode() [][]byte {
 	var buf bytes.Buffer
