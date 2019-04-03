@@ -157,6 +157,18 @@ func (c *Cluster) Subscribe(tid uint32, cid uint64) {
 	//todo, broadcast to all peers
 }
 
+func (c *Cluster) UnSubscribe(tid uint32, cid uint64) {
+	c.Lock()
+	defer c.Unlock()
+
+	subs, ok := c.subs[tid]
+	if ok {
+		delete(subs, cid)
+	}
+
+	//todo, broadcast to all peers
+}
+
 type stringset map[string]struct{}
 
 func (ss stringset) Set(value string) error {

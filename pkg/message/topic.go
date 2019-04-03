@@ -41,6 +41,10 @@ var (
 	WildCardHash = utils.MurMurHash([]byte{TopicWildcard})
 )
 
+func HashTopic(t []byte) uint32 {
+	return utils.MurMurHash(t)
+}
+
 func ParseTopic(t []byte, exactly bool) ([]uint32, error) {
 	var tids []uint32
 	var err error
