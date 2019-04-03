@@ -1,4 +1,4 @@
-// Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+//  Copyright © 2018 Sunface <CTO@188.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,11 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+package meq
 
-package main
+import (
+	"time"
+)
 
-import "github.com/imdevlab/flap/cmd"
-
-func main() {
-	cmd.Execute()
-}
+const (
+	MAX_WRITE_WAIT_TIME      = 1 * time.Second
+	MAX_CONNECTION_IDLE_TIME = 30
+)
