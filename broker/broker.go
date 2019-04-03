@@ -2,6 +2,7 @@ package broker
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -49,10 +50,9 @@ func New(path string) *Broker {
 
 		wg:      &sync.WaitGroup{},
 		clients: make(map[uint64]*client),
-
-		// init gid
-		gid: config.Conf.Broker.ID * 1e9,
 	}
+
+	fmt.Println(b.gid)
 	// init base config
 	config.Init(path)
 
@@ -72,6 +72,7 @@ func New(path string) *Broker {
 }
 
 func (b *Broker) Start() {
+	b.gid = config.Conf.Broker.ID * 1e11
 	b.running = true
 
 	b.cluster = cluster.New()
