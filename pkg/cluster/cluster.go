@@ -129,8 +129,19 @@ func (c *Cluster) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
 // Merge the gossiped data represented by buf into our state.
 // Return the state information that was modified.
 func (c *Cluster) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mesh.GossipData, err error) {
-	fmt.Println("recv broadcast:", src, buf)
-	c.gossip.GossipUnicast(src, []byte("hello online peer"))
+	var event SubscribeEvent
+	err = gob.NewDecoder(bytes.NewReader(buf)).Decode(&event)
+	if err != nil {
+		g.L.Info("cluster on broadcst error", zap.Error(err))
+	}
+
+	fmt.Println("on broadcast sub:", event)
+	switch event.Type {
+	case TypeSubscribe:
+		c.subscribe(event.Tid, event.Cid)
+	case TypeUnsubscribe:
+		c.unsubscribe(event.Tid, event.Cid)
+	}
 	return
 }
 
@@ -142,6 +153,13 @@ func (c *Cluster) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 
 // A client Subscribe to our cluster
 func (c *Cluster) Subscribe(tid uint32, cid uint64) {
+	c.subscribe(tid, cid)
+
+	//todo, broadcast to all peers
+	c.gossip.GossipBroadcast(SubscribeEvent{TypeSubscribe, tid, cid})
+}
+
+func (c *Cluster) subscribe(tid uint32, cid uint64) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -153,11 +171,16 @@ func (c *Cluster) Subscribe(tid uint32, cid uint64) {
 	} else {
 		subs[cid] = &Sub{c.Name}
 	}
-
-	//todo, broadcast to all peers
 }
 
-func (c *Cluster) UnSubscribe(tid uint32, cid uint64) {
+func (c *Cluster) Unsubscribe(tid uint32, cid uint64) {
+	c.unsubscribe(tid, cid)
+
+	//todo, broadcast to all peers
+	c.gossip.GossipBroadcast(SubscribeEvent{TypeUnsubscribe, tid, cid})
+}
+
+func (c *Cluster) unsubscribe(tid uint32, cid uint64) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -165,8 +188,6 @@ func (c *Cluster) UnSubscribe(tid uint32, cid uint64) {
 	if ok {
 		delete(subs, cid)
 	}
-
-	//todo, broadcast to all peers
 }
 
 type stringset map[string]struct{}
