@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,7 +15,6 @@ import (
 	"github.com/imdevlab/flap/pkg/message"
 	"github.com/imdevlab/g"
 	"github.com/imdevlab/g/utils"
-	"github.com/kelindar/binary"
 	"github.com/weaveworks/mesh"
 	"go.uber.org/zap"
 )
@@ -112,7 +113,7 @@ func (c *Cluster) Gossip() (complete mesh.GossipData) {
 // Return the state information that was modified.
 func (c *Cluster) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
 	var other Subs
-	err = binary.Unmarshal(buf, &other)
+	err = gob.NewDecoder(bytes.NewReader(buf)).Decode(&other)
 	if err != nil {
 		return
 	}

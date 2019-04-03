@@ -1,7 +1,9 @@
 package cluster
 
 import (
-	"github.com/kelindar/binary"
+	"bytes"
+	"encoding/gob"
+
 	"github.com/weaveworks/mesh"
 )
 
@@ -16,12 +18,13 @@ type Sub struct {
 type Subs map[uint64]map[uint64]*Sub
 
 func (ss Subs) Encode() [][]byte {
-	buf, err := binary.Marshal(ss)
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(ss)
 	if err != nil {
 		panic(err)
 	}
 
-	return [][]byte{buf}
+	return [][]byte{buf.Bytes()}
 }
 
 func (ss Subs) Merge(other mesh.GossipData) (complete mesh.GossipData) {
