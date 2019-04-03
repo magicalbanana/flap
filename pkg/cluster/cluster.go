@@ -88,8 +88,8 @@ func New() *Cluster {
 
 	// When a node comes online, it will broadcast the online message to all peers
 	go func() {
-		time.Sleep(2 * time.Second)
-		c.gossip.GossipBroadcast(OnlineMessage{})
+		time.Sleep(10 * time.Second)
+		c.gossip.GossipBroadcast(OnlineMessage{I: 3})
 	}()
 
 	return c
@@ -119,12 +119,13 @@ func (c *Cluster) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
 // Return the state information that was modified.
 func (c *Cluster) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mesh.GossipData, err error) {
 	fmt.Println("recv broadcast:", src, buf)
+	c.gossip.GossipUnicast(src, []byte("hello online peer"))
 	return
 }
 
 // Merge the gossiped data represented by buf into our state.
 func (c *Cluster) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
-
+	fmt.Println("recv unicast:", src, buf)
 	return nil
 }
 

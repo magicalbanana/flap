@@ -17,6 +17,7 @@ Here defines the messages transfer in cluster
 
 // When a node comes online, it will broadcast the online message to all peers
 type OnlineMessage struct {
+	I int
 }
 
 func (m OnlineMessage) Encode() [][]byte {
