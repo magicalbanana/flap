@@ -15,6 +15,7 @@ type Config struct {
 		LogLevel string
 	}
 	Broker struct {
+		ID     uint64
 		Listen string
 	}
 	Storage struct {

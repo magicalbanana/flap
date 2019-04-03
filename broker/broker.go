@@ -34,6 +34,8 @@ type Broker struct {
 
 	cluster *cluster.Cluster
 
+	gid uint64
+
 	sync.RWMutex
 }
 
@@ -47,6 +49,9 @@ func New(path string) *Broker {
 
 		wg:      &sync.WaitGroup{},
 		clients: make(map[uint64]*client),
+
+		// init gid
+		gid: config.Conf.Broker.ID * 1e9,
 	}
 	// init base config
 	config.Init(path)
@@ -92,8 +97,6 @@ func (b *Broker) Shutdown() {
 	g.L.Sync()
 	b.wg.Wait()
 }
-
-var uid uint64
 
 func (b *Broker) onRequest(w http.ResponseWriter, r *http.Request) {
 	if conn, ok := websocket.TryUpgrade(w, r); ok {

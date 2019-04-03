@@ -35,7 +35,7 @@ type client struct {
 }
 
 func newClient(conn net.Conn, b *Broker) *client {
-	id := atomic.AddUint64(&uid, 1)
+	id := atomic.AddUint64(&b.gid, 1)
 	c := &client{
 		id:      id,
 		conn:    conn,
