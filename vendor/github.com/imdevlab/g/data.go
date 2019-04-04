@@ -41,10 +41,3 @@ type Result struct {
 	// 当业务需要给用户返回数据时，使用该字段
 	Data interface{} `json:"data"`
 }
-
-// Service的服务节点注册自己到ETCD
-type ServerInfo struct {
-	Service string
-	IP      string // ip + port: localhost:8080
-	Load    float64
-}
