@@ -122,7 +122,11 @@ func (c *Cluster) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
 	c.subs.Merge(other)
 	c.Unlock()
 
-	fmt.Printf("after gossip: %#v\n", c.subs)
+	for topic, subs := range c.subs {
+		for cid, sub := range subs {
+			fmt.Printf("topic: %v, 用户: %v ,所在节点: %v\n", topic, cid, sub.Peer)
+		}
+	}
 	return
 }
 
