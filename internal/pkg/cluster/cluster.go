@@ -142,7 +142,7 @@ func (c *Cluster) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mes
 	fmt.Println("on broadcast sub:", event)
 	switch event.Type {
 	case TypeSubscribe:
-		c.subscribe(event.Tid, event.Cid)
+		c.subscribe(event.Tid, event.Cid, src)
 	case TypeUnsubscribe:
 		c.unsubscribe(event.Tid, event.Cid)
 	}
@@ -157,23 +157,23 @@ func (c *Cluster) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 
 // A client Subscribe to our cluster
 func (c *Cluster) Subscribe(tid uint32, cid uint64) {
-	c.subscribe(tid, cid)
+	c.subscribe(tid, cid, c.Name)
 
 	//todo, broadcast to all peers
 	c.gossip.GossipBroadcast(SubscribeEvent{TypeSubscribe, tid, cid})
 }
 
-func (c *Cluster) subscribe(tid uint32, cid uint64) {
+func (c *Cluster) subscribe(tid uint32, cid uint64, peer mesh.PeerName) {
 	c.Lock()
 	defer c.Unlock()
 
 	subs, ok := c.subs[tid]
 	if !ok {
 		nsubs := make(map[uint64]*Sub)
-		nsubs[cid] = &Sub{c.Name}
+		nsubs[cid] = &Sub{peer}
 		c.subs[tid] = nsubs
 	} else {
-		subs[cid] = &Sub{c.Name}
+		subs[cid] = &Sub{peer}
 	}
 }
 
