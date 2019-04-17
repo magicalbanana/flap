@@ -24,7 +24,7 @@ type client struct {
 	conn net.Conn
 	bk   *Broker
 
-	sender chan []*message.Pub
+	sendCh chan []*message.Pub
 
 	subs map[uint32]struct{}
 
@@ -40,7 +40,7 @@ func newClient(conn net.Conn, b *Broker) *client {
 		id:      id,
 		conn:    conn,
 		bk:      b,
-		sender:  make(chan []*message.Pub, MAX_CHANNEL_LEN),
+		sendCh:  make(chan []*message.Pub, MAX_CHANNEL_LEN),
 		subs:    make(map[uint32]struct{}),
 		closech: make(chan struct{}),
 	}
@@ -64,7 +64,7 @@ func (c *client) process() {
 	}()
 
 	// must waiting for connect first
-	err := c.waitForConnect()
+	err := c.connect()
 	if err != nil {
 		g.L.Debug("cant receive connect packet from client", zap.Uint64("cid", c.id), zap.Error(err))
 		return
@@ -72,28 +72,14 @@ func (c *client) process() {
 
 	g.L.Debug("new user online", zap.Uint64("cid", c.id), zap.String("username", string(c.username)), zap.String("ip", c.conn.RemoteAddr().String()))
 
-	// start a goroutine for other clients sending msg to this client
-	go c.sendLoop()
+	// start a goroutine for sending msg to this client
+	c.sender()
 
-	// waiting for client's message
-	reader := bufio.NewReaderSize(c.conn, 65536)
-	for !c.closed {
-		c.conn.SetDeadline(time.Now().Add(time.Second * message.MAX_IDLE_TIME))
-		msg, err := mqtt.DecodePacket(reader)
-		if err != nil {
-			g.L.Info("Decode packet error", zap.Uint64("cid", c.id), zap.Error(err))
-			return
-		}
-
-		// Handle the receive
-		if err := c.onReceive(msg); err != nil {
-			g.L.Info("handle receive error", zap.Uint64("cid", c.id), zap.Error(err))
-			return
-		}
-	}
+	// start to receive message from client
+	c.receiver()
 }
 
-func (c *client) onReceive(msg mqtt.Message) error {
+func (c *client) onMessage(msg mqtt.Message) error {
 	switch msg.Type() {
 	case mqtt.TypeOfSubscribe:
 		packet := msg.(*mqtt.Subscribe)
@@ -119,13 +105,13 @@ func (c *client) onReceive(msg mqtt.Message) error {
 			return err
 		}
 	case mqtt.TypeOfUnsubscribe:
+	case mqtt.TypeOfPublish:
 	case mqtt.TypeOfPingreq:
 		ack := mqtt.Pingresp{}
 		if _, err := ack.EncodeTo(c.conn); err != nil {
 			return err
 		}
 	case mqtt.TypeOfDisconnect:
-	case mqtt.TypeOfPublish:
 
 	}
 
@@ -140,30 +126,52 @@ func (c *client) onSubscribe(topic []byte) error {
 
 	return nil
 }
-func (c *client) sendLoop() {
-	defer func() {
-		// when disconnect, automaticly unsubscribe the topic
-		for tid := range c.subs {
-			c.bk.cluster.Unsubscribe(tid, c.id)
-		}
-		c.closed = true
-		c.conn.Close()
-		if err := recover(); err != nil {
-			g.L.Warn("panic happend in write loop", zap.Error(err.(error)), zap.Stack("stack"), zap.Uint64("cid", c.id))
+
+func (c *client) receiver() {
+	// waiting for client's message
+	reader := bufio.NewReaderSize(c.conn, 65536)
+	for !c.closed {
+		c.conn.SetDeadline(time.Now().Add(time.Second * message.MAX_IDLE_TIME))
+		msg, err := mqtt.DecodePacket(reader)
+		if err != nil {
+			g.L.Info("Decode packet error", zap.Uint64("cid", c.id), zap.Error(err))
 			return
 		}
-	}()
 
-	for {
-		select {
-		case _ = <-c.sender:
-		case <-c.closech:
+		// Handle the receive
+		if err := c.onMessage(msg); err != nil {
+			g.L.Info("handle receive error", zap.Uint64("cid", c.id), zap.Error(err))
 			return
 		}
 	}
 }
 
-func (c *client) waitForConnect() error {
+func (c *client) sender() {
+	go func() {
+		defer func() {
+			// when disconnect, automaticly unsubscribe the topic
+			for tid := range c.subs {
+				c.bk.cluster.Unsubscribe(tid, c.id)
+			}
+			c.closed = true
+			c.conn.Close()
+			if err := recover(); err != nil {
+				g.L.Warn("panic happend in write loop", zap.Error(err.(error)), zap.Stack("stack"), zap.Uint64("cid", c.id))
+				return
+			}
+		}()
+
+		for {
+			select {
+			case _ = <-c.sendCh:
+			case <-c.closech:
+				return
+			}
+		}
+	}()
+}
+
+func (c *client) connect() error {
 	reader := bufio.NewReaderSize(c.conn, 65536)
 	c.conn.SetDeadline(time.Now().Add(time.Second * message.MAX_IDLE_TIME))
 

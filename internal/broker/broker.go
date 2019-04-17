@@ -2,13 +2,11 @@ package broker
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sync"
 	"time"
 
 	"net/http"
-	_ "net/http/pprof"
 
 	"github.com/imdevlab/flap/internal/pkg/cluster"
 	"github.com/imdevlab/flap/internal/pkg/config"
@@ -52,7 +50,6 @@ func New(path string) *Broker {
 		clients: make(map[uint64]*client),
 	}
 
-	fmt.Println(b.gid)
 	// init base config
 	config.Init(path)
 
