@@ -122,6 +122,7 @@ func (c *Cluster) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
 	c.subs.Merge(other)
 	c.Unlock()
 
+	fmt.Println("after gossip merge")
 	for topic, subs := range c.subs {
 		for cid, sub := range subs {
 			fmt.Printf("topic: %v, 用户: %v ,所在节点: %v\n", topic, cid, sub.Peer)
@@ -143,6 +144,12 @@ func (c *Cluster) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mes
 	switch event.Type {
 	case TypeSubscribe:
 		c.subscribe(event.Tid, event.Cid, src)
+		fmt.Println("after subscribe")
+		for topic, subs := range c.subs {
+			for cid, sub := range subs {
+				fmt.Printf("topic: %v, 用户: %v ,所在节点: %v\n", topic, cid, sub.Peer)
+			}
+		}
 	case TypeUnsubscribe:
 		c.unsubscribe(event.Tid, event.Cid)
 	}
